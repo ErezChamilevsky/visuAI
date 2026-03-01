@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assignment 2 Simulation</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #1e1e1e;
+            color: #e0e0e0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 {
+            color: #4CAF50;
+            margin-bottom: 10px;
+        }
+
+        #controls {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #333;
+            color: white;
+            border: 1px solid #555;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+        }
+
+        button:hover {
+            background-color: #444;
+        }
+
+        button:active {
+            background-color: #222;
+        }
+
+        button.primary {
+            background-color: #2196F3;
+            border-color: #1976D2;
+        }
+
+        button.primary:hover {
+            background-color: #42A5F5;
+        }
+
+        #game-container {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+        }
+
+        #grid {
+            display: grid;
+            gap: 4px;
+            background-color: #333;
+            padding: 4px;
+            border-radius: 4px;
+        }
+
+        .cell {
+            width: 80px;
+            height: 80px;
+            background-color: #2d2d2d;
+            border-radius: 2px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            font-size: 12px;
+        }
+
+        .cell.wall {
+            background-color: #555;
+            border: 1px solid #444;
+        }
+
+        .cell.wall::after {
+            content: "WALL";
+            color: #888;
+        }
+
+        .robot {
+            width: 40px;
+            height: 40px;
+            background-color: #FF5722;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-weight: bold;
+            z-index: 10;
+            border: 2px solid #fff;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .plant {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            color: #66BB6A;
+            font-weight: bold;
+        }
+
+        .tap {
+            position: absolute;
+            bottom: 2px;
+            left: 2px;
+            color: #29B6F6;
+            font-weight: bold;
+        }
+
+        .load-indicator {
+            font-size: 10px;
+            margin-top: -5px;
+        }
+
+        #stats {
+            width: 250px;
+            background-color: #252526;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #333;
+        }
+
+        .stat-item {
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .label {
+            color: #aaa;
+        }
+
+        .value {
+            font-weight: bold;
+            font-family: monospace;
+        }
+
+        #last-action {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #333;
+            border-radius: 4px;
+            text-align: center;
+            color: #FFC107;
+            min-height: 20px;
+        }
+
+        /* Animations */
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.1);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        .robot {
+            transition: all 0.3s ease-in-out;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>Game Simulation</h1>
+
+    <div id="controls">
+        <button onclick="resetGame()">Reset</button>
+        <button class="primary" onclick="stepGame()">Step</button>
+        <button id="auto-btn" onclick="toggleAuto()">Auto Play</button>
+    </div>
+
+    <div id="game-container">
+        <div id="grid"></div>
+
+        <div id="stats">
+            <h3>Status</h3>
+            <div class="stat-item">
+                <span class="label">Steps:</span>
+                <span class="value" id="steps-val">0 / 0</span>
+            </div>
+
+            <div id="robots-stats">
+                <h4>Robots</h4>
+                <div id="robots-list"></div>
+            </div>
+
+            <div class="stat-item">
+                <div class="stat-item">
+                    <span class="label">Reward:</span>
+                    <span class="value" id="reward-val">0.0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="label">Total Need:</span>
+                    <span class="value" id="need-val">0</span>
+                </div>
+
+                <div id="last-action">Action: -</div>
+            </div>
+        </div>
+
+        <script>
+            const API_URL = "http://localhost:8000/api";
+            let autoInterval = null;
+            let isAuto = false;
+
+            async function fetchState() {
+                try {
+                    const res = await fetch(`${API_URL}/state`);
+                    const state = await res.json();
+                    render(state);
+                } catch (e) {
+                    console.error("Failed to fetch state:", e);
+                    // alert("Failed to connect to simulation server. Make sure simulation_server.py is running!");
+                    if (isAuto) toggleAuto(); // Stop auto if error
+                }
+            }
+
+            async function stepGame() {
+                try {
+                    const res = await fetch(`${API_URL}/step`, { method: "POST" });
+                    const state = await res.json();
+                    render(state);
+                } catch (e) {
+                    console.error("Failed to step:", e);
+                }
+            }
+
+            async function resetGame() {
+                try {
+                    const res = await fetch(`${API_URL}/reset`, { method: "POST" });
+                    const state = await res.json();
+                    render(state);
+                } catch (e) {
+                    console.error("Failed to reset:", e);
+                }
+            }
+
+            function toggleAuto() {
+                const btn = document.getElementById('auto-btn');
+                if (isAuto) {
+                    isAuto = false;
+                    clearInterval(autoInterval);
+                    btn.textContent = "Auto Play";
+                    btn.style.backgroundColor = "";
+                } else {
+                    isAuto = true;
+                    autoInterval = setInterval(stepGame, 1500); // 500ms per step
+                    btn.textContent = "Stop Auto";
+                    btn.style.backgroundColor = "#E91E63";
+                }
+            }
+
+            function render(state) {
+                // Update stats
+                document.getElementById('steps-val').textContent = `${state.steps} / ${state.max_steps}`;
+                document.getElementById('reward-val').textContent = state.reward.toFixed(1);
+                document.getElementById('need-val').textContent = state.total_need;
+                document.getElementById('last-action').textContent = `Action: ${state.last_action}`;
+
+                if (state.done) {
+                    document.getElementById('last-action').textContent += " (DONE)";
+                    if (isAuto) toggleAuto();
+                }
+
+                // Render Grid
+                const grid = document.getElementById('grid');
+                grid.innerHTML = '';
+                grid.style.gridTemplateColumns = `repeat(${state.cols}, 1fr)`;
+                grid.style.gridTemplateRows = `repeat(${state.rows}, 1fr)`;
+
+                // Helper to check for walls
+                const isWall = (r, c) => state.walls.some(w => w.r === r && w.c === c);
+
+                for (let r = 0; r < state.rows; r++) {
+                    for (let c = 0; c < state.cols; c++) {
+                        const cell = document.createElement('div');
+                        cell.className = 'cell';
+                        if (isWall(r, c)) {
+                            cell.classList.add('wall');
+                        }
+
+                        // Render Plants
+                        const plant = state.plants.find(p => p.r === r && p.c === c);
+                        if (plant) {
+                            const pDiv = document.createElement('div');
+                            pDiv.className = 'plant';
+                            pDiv.textContent = `🌱${plant.need}`;
+                            cell.appendChild(pDiv);
+                        }
+
+                        // Render Taps
+                        const tap = state.taps.find(t => t.r === r && t.c === c);
+                        if (tap) {
+                            const tDiv = document.createElement('div');
+                            tDiv.className = 'tap';
+                            tDiv.textContent = `💧${tap.water}`;
+                            cell.appendChild(tDiv);
+                        }
+
+                        // Render Robots
+                        const robot = state.robots.find(rob => rob.r === r && rob.c === c);
+                        if (robot) {
+                            const rDiv = document.createElement('div');
+                            rDiv.className = 'robot';
+                            rDiv.title = `Success Rate: ${robot.success_prob}`;
+                            rDiv.innerHTML = `<div>${robot.id}<div class="load-indicator">(${robot.load}/${robot.cap})</div></div>`;
+                            cell.appendChild(rDiv);
+                        }
+
+                        grid.appendChild(cell);
+                    }
+                }
+
+                // Render Robot Stats List
+                const robotsList = document.getElementById('robots-list');
+                robotsList.innerHTML = '';
+                state.robots.forEach(robot => {
+                    const item = document.createElement('div');
+                    item.className = 'stat-item';
+                    item.style.fontSize = '12px';
+                    item.innerHTML = `
+                        <span class="label">Robot ${robot.id}:</span>
+                        <span class="value">${robot.success_prob}</span>
+                    `;
+                    robotsList.appendChild(item);
+                });
+            }
+
+            // Initial fetch
+            fetchState();
+        </script>
+</body>
+
+</html>

@@ -1,0 +1,52 @@
+# VisuAI Architecture Refactoring Plan
+
+## Goal Description
+The user wants to replace the current \`react-live\` executing string-based architecture with a much more robust, beautiful, and intuitive JSON-DSL-driven Visualization Engine, exactly as dictated by the provided \[gpt_chat.txt\](file:///c:/visuAI/utl/gpt_chat.txt) and \[gpt_prompt.txt\](file:///c:/visuAI/utl/gpt_prompt.txt). The outcome will be smooth, animated visualization steps driven by structured JSON output from Gemini.
+
+## Proposed Changes
+
+### Backend Changes
+
+#### [MODIFY] backend/services/geminiPrompt.js
+- Replace the current React component generation prompt with the **Master System Prompt** found in \[utl/gpt_prompt.txt\](file:///c:/visuAI/utl/gpt_prompt.txt).
+- Ensure Gemini responds purely with the JSON specification containing \`meta\`, \`structure\`, and \`timeline\`.
+
+#### [MODIFY] backend/routes/algorithm.js
+- Parse the JSON response from Gemini.
+- Continue saving the result in the \[Algorithm\](file:///c:/visuAI/frontend/src/App.jsx#33-42) document. We will store the stringified JSON into the \`componentCode\` field (or add a new \`dsl\` field to the Mongoose schema) so that the frontend can parse it.
+- Ensure the extraction logic parses the new JSON correctly.
+
+#### [MODIFY] backend/models/Algorithm.js
+- Add \`schemaType: { type: String, default: 'react' }\` and \`dsl: { type: mongoose.Schema.Types.Mixed }\` to allow seamless backwards compatibility with older React-based algorithms, and properly store the new JSON structure.
+
+### Frontend Changes
+
+#### [NEW] frontend/src/components/VisualizationEngine.jsx
+- The main wrapper for the new visualization DSL.
+- Contains the \`TimelineController\` to manage \`isPlaying\` state, \`currentStep\`, auto-play interval, and step navigation.
+- Layout: Top controls (Play/Pause/Next/Prev/Step count), Main SVG Canvas, Left/Right side panels for Explanations and Data.
+
+#### [NEW] frontend/src/components/Renderers/GraphRenderer.jsx
+- A component to take the \`structure\` (nodes, edges) and \`timeline[currentStep]\` (activations, highlights) and render an SVG-based animated graph/tree.
+- Implements semantic coloring (active, focus, default) via smooth CSS transitions.
+
+#### [NEW] frontend/src/components/Renderers/ArrayRenderer.jsx
+- Similar renderer for Array/Stack setups.
+
+#### [MODIFY] frontend/src/components/Visualizer.jsx
+- Detect if the algorithm is \`schemaType === 'dsl'\` or \`react\`.
+- If 'dsl', render the new \`VisualizationEngine\` passing the parsed \`algorithm.dsl\`.
+- If 'react', keep the legacy \`react-live\` implementation so old generated DB records do not break.
+
+## Verification Plan
+### Automated Tests
+- None are currently configured in this repository, so we rely on manual verification via browser.
+
+### Manual Verification
+1. Run \`npm run dev\` in \`frontend\` and \`node server.js\` in \`backend\`.
+2. Provide a prompt to generate an algorithm (e.g., "Visualize Breadth First Search").
+3. Verify Gemini generates the JSON DSL without error.
+4. Open the generated visualization in the UI.
+5. Verify that the UI renders the controls, explanation panel, and visual canvas correctly.
+6. Click "Play" and observe smooth animated transitions between timeline steps, ensuring colors change based on active/focused states.
+7. Click "Previous" and "Next" to ensure the state travels seamlessly forward and backward.
