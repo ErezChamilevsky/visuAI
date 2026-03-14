@@ -8,4 +8,11 @@ Still ongoing project. Powered by Gemini.
 - Generating by prompt
 - Generating by PDF (RAG)
 
-[Watch the demo](utl/VisuAi (1).mp4)
+# Main Implement Idea
+To provide a general solution for representing all algorithms in a uniform way, a common pattern is defined that every algorithm object follows.
+When a user requests an algorithm, Gemini generates an object that conforms to this pattern.
+
+
+<img src="utl/VisuAI.png" width="400" alt="Screenshot">
+
+<img src="utl/VisuAIRag.png" width="400" alt="Screenshot">
