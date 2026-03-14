@@ -8,3 +8,4 @@ Still ongoing project. Powered by Gemini.
 - Generating by prompt
 - Generating by PDF (RAG)
 
+[Watch the demo](utl/demo.mp4)
