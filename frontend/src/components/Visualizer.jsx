@@ -25,7 +25,7 @@ const Visualizer = ({ algorithm }) => {
             </div>
 
             <div className="flex-1 flex flex-col overflow-hidden relative">
-                <LiveProvider code={algorithm.componentCode} scope={scope} noInline={true}>
+                <LiveProvider code={algorithm.componentCode} scope={scope} noInline={false}>
                     <div className="absolute inset-0 w-full h-full flex flex-col overflow-hidden">
                         <LivePreview className="w-full h-full font-sans visualizer-theme block overflow-hidden" />
                         <LiveError className="absolute bottom-4 left-4 right-4 z-50 text-rose-500 bg-rose-50 p-4 rounded-lg font-mono text-sm whitespace-pre-wrap shadow-lg border border-rose-200 max-h-[50%] overflow-y-auto" />

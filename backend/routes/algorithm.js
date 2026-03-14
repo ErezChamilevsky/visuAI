@@ -87,7 +87,7 @@ router.post('/generate', async (req, res) => {
             audioUrls: []
         };
 
-        if (parsedData.structure && parsedData.timeline) {
+        if ((parsedData.structure || parsedData.structures) && parsedData.timeline) {
             newAlgorithmData.schemaType = 'dsl';
             newAlgorithmData.dsl = parsedData;
         } else {
@@ -108,7 +108,7 @@ router.post('/generate', async (req, res) => {
 
 // Setup multer for file uploads
 const multer = require('multer');
-const { PDFParse } = require('pdf-parse');
+const pdf = require('pdf-parse');
 const upload = multer({ storage: multer.memoryStorage() });
 
 // POST to generate algorithm from file or text
@@ -118,10 +118,8 @@ router.post('/generate-from-file', upload.single('document'), async (req, res) =
 
         if (req.file) {
             if (req.file.mimetype === 'application/pdf') {
-                const pdfParser = new PDFParse({ data: req.file.buffer });
-                const pdfData = await pdfParser.getText();
+                const pdfData = await pdf(req.file.buffer);
                 extractedText += '\n\n' + pdfData.text;
-                await pdfParser.destroy();
             } else {
                 // Assume it's a plain text file if not PDF
                 extractedText += '\n\n' + req.file.buffer.toString('utf-8');
@@ -156,7 +154,7 @@ router.post('/generate-from-file', upload.single('document'), async (req, res) =
             audioUrls: []
         };
 
-        if (parsedData.structure && parsedData.timeline) {
+        if ((parsedData.structure || parsedData.structures) && parsedData.timeline) {
             newAlgorithmData.schemaType = 'dsl';
             newAlgorithmData.dsl = parsedData;
         } else {

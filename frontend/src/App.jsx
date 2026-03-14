@@ -42,7 +42,7 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col font-sans overflow-hidden">
+    <div className="w-screen h-screen bg-slate-50 flex flex-col font-sans overflow-hidden">
       <header className="bg-white border-b border-slate-200 sticky top-0 z-10 shadow-sm shrink-0">
         <div className="w-full px-6 h-16 flex items-center justify-between gap-8">
           <div
@@ -106,8 +106,8 @@ function App() {
         </div>
       </header>
 
-      <main className={`flex-1 mx-auto w-full flex flex-col relative overflow-hidden ${view === 'visualizer' ? 'max-w-[1920px] p-0' : 'max-w-7xl p-6'}`}>
-        <div className={`flex-1 w-full flex flex-col shadow-2xl border-slate-100 overflow-hidden ${view === 'visualizer' ? 'bg-transparent border-0 rounded-none' : 'bg-white rounded-3xl border min-h-[600px]'}`}>
+      <main className={`flex-1 w-full flex flex-col relative overflow-hidden ${view === 'visualizer' ? 'p-0' : 'max-w-7xl p-6 mx-auto'}`}>
+        <div className={`flex-1 w-full flex flex-col shadow-2xl border-slate-100 overflow-hidden ${view === 'visualizer' ? 'bg-transparent border-0 rounded-none h-[calc(100vh-4rem)]' : 'bg-white rounded-3xl border min-h-[600px]'}`}>
           {view === 'library' && (
             <Library onSelect={handleSelectAlgorithm} apiBase={API_BASE} />
           )}

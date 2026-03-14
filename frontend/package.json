@@ -12,7 +12,11 @@
   "dependencies": {
     "@tailwindcss/vite": "^4.2.1",
     "axios": "^1.13.5",
+    "idb": "^8.0.3",
+    "immer": "^11.1.4",
+    "js-interpreter": "^6.0.1",
     "lucide-react": "^0.575.0",
+    "pixi.js": "^8.17.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-live": "^4.1.8",

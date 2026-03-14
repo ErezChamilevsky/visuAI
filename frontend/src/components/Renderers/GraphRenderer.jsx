@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 
-const GraphRenderer = ({ structure, state }) => {
+const GraphRenderer = ({ structure, state, currentLabels = {} }) => {
     const { type, nodes, edges, root } = structure;
     const { activate = [], deactivate = [], update_labels = [], emphasize_edges = [] } = state?.state_changes || {};
     const { primary = [], secondary = [] } = state?.focus || {};
@@ -69,8 +69,10 @@ const GraphRenderer = ({ structure, state }) => {
 
         const isEmphasized = emphasize_edges.some(em => (em.from === fromId && em.to === toId) || (em.parent === fromId && em.child === toId));
 
+        const isDeactivated = deactivate.includes(fromId) || deactivate.includes(toId);
+
         return (
-            <g key={`edge-${idx}`}>
+            <g key={`edge-${idx}`} style={{ opacity: isDeactivated ? 0.1 : 1, transition: 'opacity 0.5s ease-in-out' }}>
                 <line
                     x1={p1.x} y1={p1.y}
                     x2={p2.x} y2={p2.y}
@@ -94,8 +96,7 @@ const GraphRenderer = ({ structure, state }) => {
     });
 
     const getLabel = (node) => {
-        const updated = update_labels.find(l => l.id === node.id);
-        return updated ? updated.label : node.label;
+        return currentLabels[node.id] || node.label;
     };
 
     const renderedNodes = nodes.map(n => {
@@ -124,10 +125,16 @@ const GraphRenderer = ({ structure, state }) => {
             stroke = '#d97706'; // amber-600
         }
 
+        const isDeactivated = deactivate.includes(n.id);
+
         return (
             <g
                 key={`node-${n.id}`}
-                style={{ transform: `translate(${pos.x}px, ${pos.y}px) scale(${scale})`, transition: 'all 0.5s ease-in-out' }}
+                style={{
+                    transform: `translate(${pos.x}px, ${pos.y}px) scale(${scale})`,
+                    transition: 'all 0.5s ease-in-out',
+                    opacity: isDeactivated ? 0.1 : 1
+                }}
             >
                 <circle
                     cx={0} cy={0} r={24}
